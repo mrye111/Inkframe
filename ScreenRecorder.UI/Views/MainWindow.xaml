@@ -2,8 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:ScreenRecorder.UI.ViewModels"
-        Title="Inkframe" Width="880" Height="560"
+        Title="Inkframe" Width="960" Height="640"
         WindowStartupLocation="CenterScreen"
+        FontFamily="{DynamicResource InkFontFamily}"
         Background="{DynamicResource InkBackground1}">
     <Window.Resources>
         <ResourceDictionary>
@@ -12,13 +13,65 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
-    <Grid>
-        <!-- 骨架阶段占位：真实首页（三大录制模式卡片）随 #13 主题基座落地后实施 -->
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock Text="Inkframe" Foreground="{DynamicResource InkTextPrimary}"
-                       FontSize="40" FontWeight="Light" HorizontalAlignment="Center"/>
-            <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource InkTextSecondary}"
-                       FontSize="14" HorizontalAlignment="Center" Margin="0,12,0,0"/>
-        </StackPanel>
+
+    <Grid Margin="48,32,48,40">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Hero -->
+        <TextBlock Grid.Row="0" Text="{Binding HeroText}"
+                   FontSize="{StaticResource FontHero}" FontWeight="SemiBold"
+                   Foreground="{DynamicResource InkTextPrimary}"
+                   HorizontalAlignment="Center"/>
+
+        <TextBlock Grid.Row="1" Text="{Binding StatusText}"
+                   FontSize="{StaticResource FontSecondary}"
+                   Foreground="{DynamicResource InkTextSecondary}"
+                   HorizontalAlignment="Center" Margin="0,8,0,0"
+                   TextTrimming="CharacterEllipsis" MaxWidth="800"/>
+
+        <!-- 三大录制模式卡（§9/§27：GlassCard2 基元） -->
+        <UniformGrid Grid.Row="2" Columns="3" Margin="0,32,0,24">
+            <RadioButton Content="全屏"
+                         IsChecked="{Binding SelectedMode, Converter={StaticResource ModeToBoolConverter}, ConverterParameter=FullScreen, Mode=TwoWay}"
+                         Style="{StaticResource ModeCardStyle}"/>
+            <RadioButton Content="窗口"
+                         IsChecked="{Binding SelectedMode, Converter={StaticResource ModeToBoolConverter}, ConverterParameter=Window, Mode=TwoWay}"
+                         Style="{StaticResource ModeCardStyle}"/>
+            <RadioButton Content="区域"
+                         IsChecked="{Binding SelectedMode, Converter={StaticResource ModeToBoolConverter}, ConverterParameter=Region, Mode=TwoWay}"
+                         Style="{StaticResource ModeCardStyle}"/>
+        </UniformGrid>
+
+        <!-- 窗口模式：窗口选择面板（Glass 1） -->
+        <Border Grid.Row="3" Style="{StaticResource GlassPanel1}"
+                Visibility="{Binding IsWindowMode, Converter={StaticResource BoolToVisibilityConverter}}"
+                Padding="16" Margin="0,0,0,16" MaxHeight="180">
+            <ListBox ItemsSource="{Binding Windows}" SelectedItem="{Binding SelectedWindow}"
+                     Background="Transparent" BorderThickness="0" Foreground="{DynamicResource InkTextPrimary}"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Title}" FontSize="{StaticResource FontBody}"/>
+                            <TextBlock Text="{Binding ProcessName, StringFormat='  ({0})'}"
+                                       Foreground="{DynamicResource InkTextTertiary}"
+                                       FontSize="{StaticResource FontSecondary}" VerticalAlignment="Bottom"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- 玻璃胶囊录制主按钮（§20：半透明玻璃胶囊；hover 提亮 / 点击压缩 / 平滑转 Stop） -->
+        <Button Grid.Row="4" Content="{Binding RecordButtonContent}"
+                Command="{Binding RecordToggleCommand}"
+                Style="{StaticResource RecordPillButton}"
+                HorizontalAlignment="Center"/>
     </Grid>
 </Window>

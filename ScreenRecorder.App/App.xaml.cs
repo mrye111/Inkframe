@@ -35,6 +35,7 @@ public partial class App : System.Windows.Application
         var builder = Host.CreateApplicationBuilder();
         builder.Services.AddInfrastructure();
         builder.Services.AddSingleton<IScreenCaptureService, Capture.Screen.WgcScreenCaptureService>();
+        builder.Services.AddSingleton<IWindowCatalog, Capture.Window.WindowCatalog>();
         builder.Services.AddSingleton<IAudioCaptureService, Audio.SystemAudio.WasapiAudioCaptureService>();
         builder.Services.AddTransient<Encoding.FFmpeg.FFmpegProcessEncoder>();
         builder.Services.AddSingleton<Func<IVideoEncoder>>(sp =>
