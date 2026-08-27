@@ -74,6 +74,8 @@ public sealed class RecordingManager : IRecordingManager
         await _capture.StartAsync(request, ct);
         var (w, h) = _capture.CurrentSize;
 
+        var audioEnabled = cfg.Audio.SystemAudio || cfg.Audio.Microphone;
+
         _encoder = _encoderFactory();
         await _encoder.InitializeAsync(new VideoEncoderOptions
         {
@@ -82,6 +84,7 @@ public sealed class RecordingManager : IRecordingManager
             Fps = cfg.Video.Fps,
             Quality = cfg.Video.Quality,
             Encoder = cfg.Video.Encoder,
+            AudioEnabled = audioEnabled,
             OutputFilePath = outputPath
         });
 
@@ -89,9 +92,12 @@ public sealed class RecordingManager : IRecordingManager
         _clock = System.Diagnostics.Stopwatch.StartNew();
         _capture.FrameArrived += OnFrameArrived;
 
-        // §16-17：音频按配置启用（#11 实现真实采集）
-        if (cfg.Audio.SystemAudio || cfg.Audio.Microphone)
+        // §16-18：音频按配置启用，混合块路由进编码器（§48：暂停期丢音频块，与视频同步剔除）
+        if (audioEnabled)
+        {
+            _audio.BufferReady += OnAudioBuffer;
             await _audio.StartAsync(cfg.Audio.SystemAudio, cfg.Audio.Microphone, ct);
+        }
 
         TransitionTo(RecordingState.Recording);
     }
@@ -119,6 +125,7 @@ public sealed class RecordingManager : IRecordingManager
 
         TransitionTo(RecordingState.Stopping);
         _capture.FrameArrived -= OnFrameArrived;
+        _audio.BufferReady -= OnAudioBuffer;
         await _capture.StopAsync(ct);
         await _audio.StopAsync(ct);
 
@@ -151,6 +158,13 @@ public sealed class RecordingManager : IRecordingManager
         if (!_throttler.ShouldWrite(_clock.Elapsed))
             return;
         _encoder.EncodeFrameAsync(frame).GetAwaiter().GetResult();   // 同步消费复用缓冲（采集契约）
+    }
+
+    private void OnAudioBuffer(object? sender, AudioBuffer buffer)
+    {
+        if (State != RecordingState.Recording || _encoder is null)
+            return;   // 暂停：音频块丢弃，与视频帧剔除保持同一时间轴（§22/§48）
+        _encoder.EncodeAudioAsync(buffer).GetAwaiter().GetResult();
     }
 
     private void EnsureState(RecordingState expected)

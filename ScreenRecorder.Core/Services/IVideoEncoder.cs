@@ -5,6 +5,10 @@ public interface IVideoEncoder
 {
     Task InitializeAsync(VideoEncoderOptions options);
     Task EncodeFrameAsync(VideoFrame frame);
+
+    /// <summary>写入一块混合音频（s16le/48kHz/立体声）。仅 options.AudioEnabled 时会被调用。</summary>
+    Task EncodeAudioAsync(AudioBuffer buffer);
+
     Task FlushAsync();
     Task StopAsync();
 }
@@ -16,6 +20,9 @@ public sealed record VideoEncoderOptions
     public int Fps { get; init; } = 30;
     public string Quality { get; init; } = "标准";
     public string Encoder { get; init; } = "auto";   // auto/nvenc/qsv/amf/software
+
+    /// <summary>是否带音频轨（系统声/麦克风任一启用）。</summary>
+    public bool AudioEnabled { get; init; }
     public required string OutputFilePath { get; init; }
 }
 

@@ -16,6 +16,8 @@ public sealed class FFmpegProcessEncoder : IVideoEncoder, IDisposable
     private Process? _ffmpeg;
     private VideoEncoderOptions? _options;
     private string? _resolvedEncoder;
+    private System.IO.Pipes.NamedPipeServerStream? _audioPipe;
+    private Task? _pipeWaitTask;
 
     public FFmpegProcessEncoder() : this(new FfmpegLocator()) { }
 
@@ -34,9 +36,25 @@ public sealed class FFmpegProcessEncoder : IVideoEncoder, IDisposable
         _resolvedEncoder = options.Encoder == "auto" ? _prober.Probe() : options.Encoder;
 
         var qualityArgs = QualityArgs(_resolvedEncoder, options.Quality);
+
+        // 音频轨：命名管道作第二输入（Windows 上 ffmpeg 只有 pipe:0 一个描述符管道，音频走 \\.\pipe\）
+        string? audioPipeName = null;
+        if (options.AudioEnabled)
+        {
+            audioPipeName = "inkframe-audio-" + Guid.NewGuid().ToString("N");
+            _audioPipe = new System.IO.Pipes.NamedPipeServerStream(
+                audioPipeName, System.IO.Pipes.PipeDirection.Out, 1,
+                System.IO.Pipes.PipeTransmissionMode.Byte, System.IO.Pipes.PipeOptions.Asynchronous);
+            _pipeWaitTask = _audioPipe.WaitForConnectionAsync();   // ffmpeg 启动时会来连
+        }
+
         var args = "-y -hide_banner -loglevel error"
-            + $" -f rawvideo -pix_fmt bgra -s {options.Width}x{options.Height} -r {options.Fps} -i -"
+            + $" -f rawvideo -pix_fmt bgra -s {options.Width}x{options.Height} -r {options.Fps} -i pipe:0"
+            + (audioPipeName is not null
+                ? $" -f s16le -ar 48000 -ac 2 -i \\\\.\\pipe\\{audioPipeName}"
+                : "")
             + $" -c:v {_resolvedEncoder} {qualityArgs}"
+            + (audioPipeName is not null ? " -map 0:v -map 1:a -c:a aac -shortest" : "")
             + " -pix_fmt yuv420p"
             + " \"" + options.OutputFilePath + "\"";
 
@@ -69,10 +87,23 @@ public sealed class FFmpegProcessEncoder : IVideoEncoder, IDisposable
         return Task.CompletedTask;
     }
 
+    public Task EncodeAudioAsync(AudioBuffer buffer)
+    {
+        if (_audioPipe is null) return Task.CompletedTask;
+        if (!_audioPipe.IsConnected)
+            return Task.CompletedTask;   // ffmpeg 尚未连上（启动竞态）：丢 20ms 无感
+        return _audioPipe.WriteAsync(buffer.Data, 0, buffer.Data.Length);
+    }
+
     public async Task FlushAsync()
     {
         if (_ffmpeg is null) return;
-        _ffmpeg.StandardInput.Close();          // 关闭输入 → ffmpeg 排空并封装 moov
+        _ffmpeg.StandardInput.Close();          // 视频输入关闭
+        if (_audioPipe is not null)
+        {
+            if (_pipeWaitTask is not null) await Task.WhenAny(_pipeWaitTask, Task.Delay(2000));
+            _audioPipe.Close();                 // 音频输入关闭 → ffmpeg 收到双 EOF 收尾封装
+        }
         await _ffmpeg.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30));
     }
 
@@ -95,6 +126,7 @@ public sealed class FFmpegProcessEncoder : IVideoEncoder, IDisposable
 
     public void Dispose()
     {
+        _audioPipe?.Dispose();
         try
         {
             if (_ffmpeg is { HasExited: false })

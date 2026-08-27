@@ -28,6 +28,8 @@ public sealed class RecordingManagerTests
         public bool Initialized, Stopped;
         public Task InitializeAsync(VideoEncoderOptions options) { Initialized = true; return Task.CompletedTask; }
         public Task EncodeFrameAsync(VideoFrame frame) { Frames++; return Task.CompletedTask; }
+        public int AudioChunks;
+        public Task EncodeAudioAsync(AudioBuffer buffer) { AudioChunks++; return Task.CompletedTask; }
         public Task FlushAsync() => Task.CompletedTask;
         public Task StopAsync() { Stopped = true; return Task.CompletedTask; }
     }
