@@ -1,0 +1,52 @@
+# ============================================================
+# 内部文档 —— 需求文档与设计规范不上传至远程仓库
+# ============================================================
+*需求文档*.md
+*视觉风格规范*.md
+*设计规范*.md
+docs/internal/
+
+# ============================================================
+# Visual Studio / .NET
+# ============================================================
+.vs/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vsconfig
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+# Rider / ReSharper
+.idea/
+*.DotSettings.user
+
+# OS
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# 本地录制产物（测试输出）
+recordings/
+*.mp4
