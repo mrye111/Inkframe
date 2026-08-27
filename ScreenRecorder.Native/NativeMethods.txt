@@ -1,0 +1,11 @@
+DwmSetWindowAttribute
+DwmGetWindowAttribute
+EnumWindows
+IsWindowVisible
+GetWindowLong
+GetWindowTextLength
+GetDpiForMonitor
+EnumDisplayMonitors
+GetMonitorInfo
+RegisterHotKey
+UnregisterHotKey

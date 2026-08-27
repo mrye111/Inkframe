@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- 设计规范 §10 背景层级 / §19 录制红；完整 Token 体系随 #13 落地 -->
+    <Color x:Key="InkBackgroundColor0">#090A0D</Color>
+    <Color x:Key="InkBackgroundColor1">#101218</Color>
+    <Color x:Key="InkBackgroundColor2">#151821</Color>
+    <Color x:Key="InkRecordingRedColor">#FF453A</Color>
+
+    <SolidColorBrush x:Key="InkBackground0" Color="{StaticResource InkBackgroundColor0}"/>
+    <SolidColorBrush x:Key="InkBackground1" Color="{StaticResource InkBackgroundColor1}"/>
+    <SolidColorBrush x:Key="InkBackground2" Color="{StaticResource InkBackgroundColor2}"/>
+    <SolidColorBrush x:Key="InkRecordingRed" Color="{StaticResource InkRecordingRedColor}"/>
+    <SolidColorBrush x:Key="InkTextPrimary" Color="#F2F2F5"/>
+    <SolidColorBrush x:Key="InkTextSecondary" Color="#9A9AA5"/>
+</ResourceDictionary>

@@ -1,0 +1,24 @@
+<Window x:Class="ScreenRecorder.UI.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:ScreenRecorder.UI.ViewModels"
+        Title="Inkframe" Width="880" Height="560"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource InkBackground1}">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Themes/GlassTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid>
+        <!-- 骨架阶段占位：真实首页（三大录制模式卡片）随 #13 主题基座落地后实施 -->
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Text="Inkframe" Foreground="{DynamicResource InkTextPrimary}"
+                       FontSize="40" FontWeight="Light" HorizontalAlignment="Center"/>
+            <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource InkTextSecondary}"
+                       FontSize="14" HorizontalAlignment="Center" Margin="0,12,0,0"/>
+        </StackPanel>
+    </Grid>
+</Window>

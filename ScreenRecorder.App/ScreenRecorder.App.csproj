@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ScreenRecorder.UI\ScreenRecorder.UI.csproj" />
+    <ProjectReference Include="..\ScreenRecorder.Core\ScreenRecorder.Core.csproj" />
+    <ProjectReference Include="..\ScreenRecorder.Capture\ScreenRecorder.Capture.csproj" />
+    <ProjectReference Include="..\ScreenRecorder.Audio\ScreenRecorder.Audio.csproj" />
+    <ProjectReference Include="..\ScreenRecorder.Encoding\ScreenRecorder.Encoding.csproj" />
+    <ProjectReference Include="..\ScreenRecorder.Infrastructure\ScreenRecorder.Infrastructure.csproj" />
+    <ProjectReference Include="..\ScreenRecorder.Native\ScreenRecorder.Native.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+</Project>

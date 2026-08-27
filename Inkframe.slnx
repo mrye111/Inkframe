@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="ScreenRecorder.App/ScreenRecorder.App.csproj" />
+  <Project Path="ScreenRecorder.Audio/ScreenRecorder.Audio.csproj" />
+  <Project Path="ScreenRecorder.Capture/ScreenRecorder.Capture.csproj" />
+  <Project Path="ScreenRecorder.Core/ScreenRecorder.Core.csproj" />
+  <Project Path="ScreenRecorder.Encoding/ScreenRecorder.Encoding.csproj" />
+  <Project Path="ScreenRecorder.Infrastructure/ScreenRecorder.Infrastructure.csproj" />
+  <Project Path="ScreenRecorder.Native/ScreenRecorder.Native.csproj" />
+  <Project Path="ScreenRecorder.Tests/ScreenRecorder.Tests.csproj" />
+  <Project Path="ScreenRecorder.UI/ScreenRecorder.UI.csproj" />
+</Solution>
