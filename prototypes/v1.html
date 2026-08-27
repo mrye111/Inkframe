@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inkframe V1 — 完整原型</title>
+<style>
+:root{
+  --bg-0:#090A0D; --bg-1:#101218; --bg-2:#151821;
+  --text-1:#F2F2F5; --text-2:#9A9AA5; --text-3:#62626C;
+  --rec-red:#FF453A; --soft-blue:#5E8CE6; --soft-green:#63C28C;
+  --r-card:24px; --r-btn:22px; --r-panel:12px; --r-pill:999px;
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+  --font:"Segoe UI Variable","Microsoft YaHei UI",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:var(--font)}
+html,body{height:100%;background:var(--bg-0);color:var(--text-1);-webkit-font-smoothing:antialiased}
+
+/* ===== 原型导航 ===== */
+.nav{
+  position:fixed;left:0;top:0;bottom:0;width:200px;z-index:100;
+  background:rgba(16,18,24,0.92);
+  border-right:1px solid rgba(255,255,255,0.06);
+  padding:24px 16px;display:flex;flex-direction:column;gap:4px;
+}
+.nav-brand{font-size:15px;font-weight:600;letter-spacing:0.02em;padding:0 8px 16px}
+.nav-brand span{color:var(--text-3);font-weight:400;font-size:11px;display:block;margin-top:2px}
+.nav-item{
+  padding:10px 12px;border-radius:10px;cursor:pointer;
+  font-size:13px;color:var(--text-2);
+  transition:background 180ms var(--ease-out),color 180ms var(--ease-out);
+  border:1px solid transparent;
+}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:var(--text-1)}
+.nav-item.active{
+  background:rgba(94,140,230,0.12);color:var(--soft-blue);
+  border-color:rgba(94,140,230,0.25);
+}
+.nav-hint{margin-top:auto;font-size:10.5px;color:var(--text-3);line-height:1.6;padding:0 8px}
+
+/* ===== 舞台 ===== */
+.stage{margin-left:200px;min-height:100vh;display:grid;place-items:center;padding:40px}
+.screen{display:none}
+.screen.active{display:block}
+
+/* ===== 窗口框（模拟 WPF 窗体） ===== */
+.winframe{
+  width:960px;height:640px;border-radius:16px;overflow:hidden;
+  background:var(--bg-1);
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:0 40px 100px rgba(0,0,0,0.6),0 0 0 1px rgba(0,0,0,0.4);
+  position:relative;
+}
+.winframe .titlebar{
+  height:38px;display:flex;align-items:center;padding:0 14px;
+  background:rgba(255,255,255,0.03);
+  border-bottom:1px solid rgba(255,255,255,0.05);
+  font-size:12px;color:var(--text-2);
+}
+.winframe .titlebar .dots{margin-left:auto;display:flex;gap:14px;color:var(--text-3);font-size:12px}
+
+/* ===== 桌面仿真（覆盖层类屏幕的语境） ===== */
+.desktop{
+  width:960px;height:640px;border-radius:16px;overflow:hidden;position:relative;
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:0 40px 100px rgba(0,0,0,0.6);
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 20%,rgba(94,140,230,0.20),transparent 60%),
+    radial-gradient(ellipse 70% 55% at 75% 75%,rgba(99,194,140,0.12),transparent 55%),
+    radial-gradient(ellipse 50% 45% at 60% 40%,rgba(180,120,220,0.10),transparent 60%),
+    linear-gradient(160deg,#1a2030 0%,#0e1420 50%,#0a0e18 100%);
+}
+.desktop-icons{position:absolute;top:20px;left:20px;display:flex;flex-direction:column;gap:18px}
+.dicon{width:64px;text-align:center;font-size:10.5px;color:rgba(255,255,255,0.75)}
+.dicon .box{width:44px;height:44px;margin:0 auto 6px;border-radius:10px;
+  background:rgba(255,255,255,0.10);display:grid;place-items:center;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.15)}
+.taskbar{
+  position:absolute;left:0;right:0;bottom:0;height:44px;
+  background:rgba(10,12,16,0.75);backdrop-filter:blur(20px);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.taskbar .ticon{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,0.10)}
+
+/* ===== 通用玻璃件 ===== */
+.glass-panel{
+  background:linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025));
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:var(--r-panel);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+/* Toggle（§36 玻璃拨杆） */
+.toggle{
+  width:44px;height:26px;border-radius:999px;cursor:pointer;position:relative;flex:none;
+  background:rgba(255,255,255,0.10);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,0.25);
+  transition:background 220ms var(--ease-out);
+  border:1px solid rgba(255,255,255,0.08);
+}
+.toggle::after{
+  content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+  background:linear-gradient(180deg,#FFFFFF,#D8D9DF);
+  box-shadow:0 2px 6px rgba(0,0,0,0.35);
+  transition:transform 240ms var(--ease-spring);
+}
+.toggle.on{background:var(--soft-blue)}
+.toggle.on::after{transform:translateX(18px)}
+.toggle.red.on{background:var(--rec-red)}
+
+/* 下拉/分段 */
+.select-row{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px;padding:6px 12px;font-size:12.5px;color:var(--text-1);cursor:pointer;
+  transition:background 180ms var(--ease-out);
+}
+.select-row:hover{background:rgba(255,255,255,0.09)}
+.seg{display:flex;background:rgba(255,255,255,0.05);border-radius:10px;padding:3px;border:1px solid rgba(255,255,255,0.06)}
+.seg span{
+  padding:5px 14px;font-size:12px;color:var(--text-2);border-radius:8px;cursor:pointer;
+  transition:all 200ms var(--ease-out);
+}
+.seg span.on{background:rgba(255,255,255,0.12);color:var(--text-1);box-shadow:0 1px 4px rgba(0,0,0,0.25)}
+
+@keyframes rise{to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes ringGrow{from{transform:scale(0.92);opacity:0.4}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-brand">Inkframe<span>V1 完整原型 · 6 屏</span></div>
+  <div class="nav-item active" data-screen="home">首页</div>
+  <div class="nav-item" data-screen="countdown">开始倒计时</div>
+  <div class="nav-item" data-screen="floatbar">悬浮录制条</div>
+  <div class="nav-item" data-screen="region">区域选择</div>
+  <div class="nav-item" data-screen="settings">设置</div>
+  <div class="nav-item" data-screen="history">录制历史</div>
+  <div class="nav-hint">设计基准：Liquid Glass 规范<br>Tokens 全部对齐内部文档<br>960×640 = 主窗体尺寸</div>
+</nav>
+<main class="stage" id="stage">
+<!-- ========== 屏 1：首页 ========== -->
+<section class="screen active" id="s-home">
+<div class="winframe">
+  <div class="titlebar">Inkframe<div class="dots">— ▢ ✕</div></div>
+  <div style="position:relative;height:602px;display:flex;flex-direction:column;align-items:center;padding:56px 48px 40px">
+    <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 90% 55% at 50% -10%,rgba(94,140,230,0.06),transparent 65%)"></div>
+    <h1 style="font-size:36px;font-weight:600;letter-spacing:-0.02em;background:linear-gradient(180deg,#FFF,#C8C9D0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Ready to record?</h1>
+    <p style="margin-top:10px;font-size:13px;color:var(--text-2)">选择一种方式，剩下的交给 Inkframe</p>
+    <div style="display:flex;gap:24px;margin-top:44px" id="proto-modes">
+      <div class="pcard selected" data-m="fullscreen" tabindex="0">
+        <div class="pcheck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="picon"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <div class="ptitle">全屏录制</div>
+        <div class="pdesc">完整记录整个显示器<br>适合教程与演示</div>
+      </div>
+      <div class="pcard" data-m="window" tabindex="0">
+        <div class="pcheck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="picon"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><circle cx="6.5" cy="6.5" r="0.7" fill="currentColor"/><circle cx="9.5" cy="6.5" r="0.7" fill="currentColor"/></svg></div>
+        <div class="ptitle">窗口录制</div>
+        <div class="pdesc">只锁定一个应用窗口<br>其他内容不会入镜</div>
+      </div>
+      <div class="pcard" data-m="region" tabindex="0">
+        <div class="pcheck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="picon"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M2 6h14a2 2 0 0 1 2 2v14"/></svg></div>
+        <div class="ptitle">区域录制</div>
+        <div class="pdesc">自由框选任意范围<br>精确到像素</div>
+      </div>
+    </div>
+    <button class="prec" id="proto-rec">
+      <span class="prec-dot"></span><span id="proto-rec-text">Start Record</span>
+    </button>
+    <p id="proto-status" style="margin-top:16px;font-size:11.5px;color:var(--text-3);letter-spacing:0.02em">全屏 · 1080P · 30 FPS · 系统声音 + 麦克风</p>
+  </div>
+</div>
+</section>
+
+<!-- ========== 屏 2：开始倒计时（§20） ========== -->
+<section class="screen" id="s-countdown">
+<div class="desktop">
+  <div class="desktop-icons">
+    <div class="dicon"><div class="box"></div>此电脑</div>
+    <div class="dicon"><div class="box"></div>回收站</div>
+    <div class="dicon"><div class="box"></div>文档</div>
+  </div>
+  <div class="taskbar"><div class="ticon"></div><div class="ticon"></div><div class="ticon"></div><div class="ticon"></div></div>
+  <!-- 倒计时遮罩 -->
+  <div style="position:absolute;inset:0;background:rgba(9,10,13,0.72);backdrop-filter:blur(6px);display:grid;place-items:center">
+    <div style="text-align:center">
+      <div style="position:relative;display:inline-grid;place-items:center">
+        <div id="cd-ring" style="position:absolute;width:200px;height:200px;border-radius:50%;border:1.5px solid rgba(255,69,58,0.35);animation:ringGrow 900ms var(--ease-out) infinite"></div>
+        <div id="cd-num" style="font-size:110px;line-height:1.1;font-weight:600;letter-spacing:-0.03em;background:linear-gradient(180deg,#FFF,#B9BAC4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">3</div>
+      </div>
+      <div style="margin-top:8px;font-size:13px;color:var(--text-2)">即将开始 · 全屏录制</div>
+      <div class="glass-panel" style="margin:28px auto 0;display:inline-block;padding:9px 20px;font-size:12px;color:var(--text-2);cursor:pointer">按 Esc 或点击取消</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ========== 屏 3：悬浮录制条（§21/§31-35） ========== -->
+<section class="screen" id="s-floatbar">
+<div class="desktop">
+  <div class="desktop-icons">
+    <div class="dicon"><div class="box"></div>此电脑</div>
+    <div class="dicon"><div class="box"></div>回收站</div>
+  </div>
+  <div class="taskbar"><div class="ticon"></div><div class="ticon"></div><div class="ticon"></div><div class="ticon"></div></div>
+  <!-- 悬浮条：Glass 3 -->
+  <div id="floatbar" style="position:absolute;left:50%;bottom:76px;transform:translateX(-50%);
+       display:flex;align-items:center;gap:16px;height:56px;padding:0 10px 0 22px;
+       border-radius:999px;
+       background:rgba(18,20,26,0.72);backdrop-filter:blur(28px) saturate(1.4);
+       border:1px solid rgba(255,255,255,0.10);
+       box-shadow:0 16px 48px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.10)">
+    <span id="fb-dot" style="width:11px;height:11px;border-radius:50%;background:var(--rec-red);box-shadow:0 0 10px rgba(255,69,58,0.6);animation:pulse 1.6s ease-in-out infinite;flex:none"></span>
+    <span id="fb-time" style="font-size:16px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:0.02em">00:04:32</span>
+    <span style="width:1px;height:22px;background:rgba(255,255,255,0.10)"></span>
+    <!-- 麦克风 + 实时音量 -->
+    <div style="display:flex;align-items:center;gap:8px">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F2F2F5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      <div style="display:flex;gap:2.5px;align-items:flex-end;height:16px" id="fb-vu">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+    </div>
+    <span style="width:1px;height:22px;background:rgba(255,255,255,0.10)"></span>
+    <button class="fb-btn" id="fb-pause" title="暂停">
+      <svg id="fb-pause-icon" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.2"/><rect x="14" y="4" width="4" height="16" rx="1.2"/></svg>
+    </button>
+    <button class="fb-btn fb-stop" id="fb-stop" title="停止">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2.5"/></svg>
+    </button>
+  </div>
+  <div style="position:absolute;left:50%;bottom:20px;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,0.4)">点击暂停/停止按钮演示状态切换 · 音量柱为实时律动</div>
+</div>
+</section>
+
+<!-- ========== 屏 4：区域选择（§11） ========== -->
+<section class="screen" id="s-region">
+<div class="desktop">
+  <div class="desktop-icons">
+    <div class="dicon"><div class="box"></div>此电脑</div>
+    <div class="dicon"><div class="box"></div>回收站</div>
+    <div class="dicon"><div class="box"></div>文档</div>
+  </div>
+  <div class="taskbar"><div class="ticon"></div><div class="ticon"></div><div class="ticon"></div></div>
+  <!-- 暗化遮罩 -->
+  <div style="position:absolute;inset:0;background:rgba(6,7,9,0.55)"></div>
+  <!-- 提示胶囊 -->
+  <div style="position:absolute;top:40px;left:50%;transform:translateX(-50%);
+       padding:10px 22px;border-radius:999px;font-size:12.5px;color:var(--text-1);
+       background:rgba(16,18,24,0.85);backdrop-filter:blur(20px);
+       border:1px solid rgba(255,255,255,0.10);box-shadow:0 8px 28px rgba(0,0,0,0.4)">
+    拖拽框选录制区域 · <span style="color:var(--text-3)">Esc 取消</span>
+  </div>
+  <!-- 橡皮筋选区 -->
+  <div style="position:absolute;left:220px;top:130px;width:520px;height:330px;
+       border:1.5px solid var(--rec-red);border-radius:4px;
+       box-shadow:0 0 0 9999px rgba(6,7,9,0.0), inset 0 0 0 1px rgba(255,255,255,0.15);
+       background:rgba(255,69,58,0.04)">
+    <!-- 角柄 -->
+    <i class="handle" style="left:-5px;top:-5px"></i><i class="handle" style="right:-5px;top:-5px"></i>
+    <i class="handle" style="left:-5px;bottom:-5px"></i><i class="handle" style="right:-5px;bottom:-5px"></i>
+    <!-- 尺寸标签 -->
+    <div style="position:absolute;left:0;bottom:-34px;padding:5px 12px;border-radius:8px;
+         background:rgba(16,18,24,0.9);border:1px solid rgba(255,255,255,0.10);
+         font-size:12px;font-variant-numeric:tabular-nums;color:var(--text-1)">1280 × 720</div>
+    <!-- 确认按钮 -->
+    <div style="position:absolute;right:0;bottom:-40px;display:flex;gap:8px">
+      <div class="glass-panel" style="padding:7px 16px;font-size:12px;color:var(--text-2);cursor:pointer;border-radius:10px">取消</div>
+      <div style="padding:7px 16px;font-size:12px;border-radius:10px;cursor:pointer;color:#fff;
+           background:linear-gradient(180deg,rgba(255,69,58,0.85),rgba(255,69,58,0.7));
+           box-shadow:0 4px 16px rgba(255,69,58,0.3)">开始录制</div>
+    </div>
+  </div>
+  <style>.handle{position:absolute;width:10px;height:10px;border-radius:3px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.5)}</style>
+</div>
+</section>
+
+<!-- ========== 屏 5：设置（§31-36） ========== -->
+<section class="screen" id="s-settings">
+<div class="winframe">
+  <div class="titlebar">Inkframe · 设置<div class="dots">— ▢ ✕</div></div>
+  <div style="display:flex;height:602px">
+    <!-- 左导航（Glass 1） -->
+    <div style="width:196px;padding:20px 12px;border-right:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:2px">
+      <div class="set-nav on">常规</div>
+      <div class="set-nav">录制</div>
+      <div class="set-nav">视频</div>
+      <div class="set-nav">音频</div>
+      <div style="margin-top:auto" class="set-nav">关于</div>
+    </div>
+    <!-- 右侧设置区 -->
+    <div style="flex:1;padding:24px 28px;overflow:hidden">
+      <div style="font-size:17px;font-weight:600;margin-bottom:18px">录制</div>
+      <div class="glass-panel" style="padding:6px 20px;margin-bottom:14px">
+        <div class="set-row"><div><div class="set-name">开始倒计时</div><div class="set-desc">录制前 3 秒倒数，可按 Esc 取消</div></div><div class="toggle on red"></div></div>
+        <div class="set-row"><div><div class="set-name">录制光标</div><div class="set-desc">在画面中显示鼠标指针</div></div><div class="toggle on"></div></div>
+        <div class="set-row" style="border:none"><div><div class="set-name">鼠标高亮</div><div class="set-desc">指针周围显示录制红光环</div></div><div class="toggle"></div></div>
+      </div>
+      <div class="glass-panel" style="padding:6px 20px;margin-bottom:14px">
+        <div class="set-row"><div><div class="set-name">保存目录</div><div class="set-desc" style="font-variant-numeric:tabular-nums">C:\Users\…\Videos\Inkframe</div></div><div class="select-row">更改</div></div>
+        <div class="set-row" style="border:none"><div><div class="set-name">暂停快捷键</div><div class="set-desc">点击右侧重新录制按键</div></div><div class="select-row" style="font-variant-numeric:tabular-nums">Ctrl + Alt + P</div></div>
+      </div>
+      <div class="glass-panel" style="padding:6px 20px">
+        <div class="set-row" style="border:none"><div><div class="set-name">崩溃保护</div><div class="set-desc">异常退出时保留已录制内容</div></div><div class="toggle on"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ========== 屏 6：录制历史（§28） ========== -->
+<section class="screen" id="s-history">
+<div class="winframe">
+  <div class="titlebar">Inkframe · 录制历史<div class="dots">— ▢ ✕</div></div>
+  <div style="padding:24px 32px;height:602px;overflow:hidden">
+    <div style="display:flex;align-items:baseline;margin-bottom:18px">
+      <div style="font-size:17px;font-weight:600">录制历史</div>
+      <div style="margin-left:10px;font-size:12px;color:var(--text-3)">共 4 条 · 12.4 GB</div>
+      <div class="select-row" style="margin-left:auto">打开目录</div>
+    </div>
+    <div id="hist-list" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
+</div>
+</section>
+
+<style>
+/* ===== 首页卡 ===== */
+.pcard{position:relative;width:230px;height:222px;border-radius:24px;cursor:pointer;
+  border:1px solid transparent;
+  background:linear-gradient(180deg,rgba(255,255,255,0.075),rgba(255,255,255,0.03));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),inset 0 -1px 0 rgba(0,0,0,0.22),0 12px 32px rgba(0,0,0,0.28);
+  transition:all 260ms var(--ease-spring);padding:22px;display:flex;flex-direction:column;align-items:flex-start}
+.pcard:hover{transform:translateY(-4px);background:linear-gradient(180deg,rgba(255,255,255,0.105),rgba(255,255,255,0.045))}
+.pcard:active{transform:translateY(-1px) scale(0.985)}
+.pcard.selected{border-color:rgba(94,140,230,0.55);
+  background:linear-gradient(180deg,rgba(94,140,230,0.14),rgba(94,140,230,0.05));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.16),0 16px 40px rgba(94,140,230,0.14),0 0 0 1px rgba(94,140,230,0.25)}
+.picon{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;color:var(--text-1);
+  background:linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.12);transition:all 260ms var(--ease-spring)}
+.pcard.selected .picon{color:var(--soft-blue)}
+.pcard:hover .picon{transform:scale(1.06)}
+.ptitle{margin-top:auto;font-size:16.5px;font-weight:600}
+.pdesc{margin-top:5px;font-size:12px;color:var(--text-2);line-height:1.55}
+.pcheck{position:absolute;top:14px;right:14px;width:21px;height:21px;border-radius:50%;
+  display:grid;place-items:center;background:var(--soft-blue);
+  opacity:0;transform:scale(0.5);transition:all 300ms var(--ease-spring)}
+.pcard.selected .pcheck{opacity:1;transform:scale(1)}
+.prec{margin-top:40px;display:flex;align-items:center;gap:12px;height:56px;padding:0 36px;
+  border-radius:22px;border:1px solid transparent;cursor:pointer;
+  font-size:15px;font-weight:500;color:var(--text-1);
+  background:linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0.05));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.14),0 8px 24px rgba(0,0,0,0.30);
+  transition:all 220ms var(--ease-out)}
+.prec:hover{background:linear-gradient(180deg,rgba(255,255,255,0.15),rgba(255,255,255,0.075));transform:translateY(-1px)}
+.prec:active{transform:scale(0.96)}
+.prec-dot{width:12px;height:12px;border-radius:50%;background:var(--rec-red);box-shadow:0 0 12px rgba(255,69,58,0.55);transition:all 300ms var(--ease-out)}
+.prec.recording{border-color:rgba(255,69,58,0.35);background:linear-gradient(180deg,rgba(255,69,58,0.16),rgba(255,69,58,0.07))}
+.prec.recording .prec-dot{border-radius:3px;animation:pulse 1.6s ease-in-out infinite}
+
+/* ===== 悬浮条 ===== */
+.fb-btn{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,0.08);cursor:pointer;
+  display:grid;place-items:center;color:var(--text-1);
+  background:rgba(255,255,255,0.07);transition:all 200ms var(--ease-out)}
+.fb-btn:hover{background:rgba(255,255,255,0.13)}
+.fb-btn:active{transform:scale(0.92)}
+.fb-stop{color:#fff;background:linear-gradient(180deg,rgba(255,69,58,0.9),rgba(255,69,58,0.75));
+  border-color:rgba(255,69,58,0.4);box-shadow:0 4px 14px rgba(255,69,58,0.3)}
+.fb-stop:hover{background:linear-gradient(180deg,rgba(255,69,58,1),rgba(255,69,58,0.85))}
+#fb-vu i{width:3px;border-radius:2px;background:var(--soft-green);display:block;transition:height 120ms ease}
+
+/* ===== 设置 ===== */
+.set-nav{padding:9px 14px;border-radius:10px;font-size:13px;color:var(--text-2);cursor:pointer;transition:all 180ms var(--ease-out)}
+.set-nav:hover{background:rgba(255,255,255,0.05);color:var(--text-1)}
+.set-nav.on{background:rgba(94,140,230,0.12);color:var(--soft-blue)}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.set-name{font-size:13.5px}
+.set-desc{font-size:11.5px;color:var(--text-3);margin-top:2px}
+
+/* ===== 历史 ===== */
+.hist{display:flex;gap:16px;padding:12px;border-radius:16px;cursor:pointer;
+  border:1px solid transparent;transition:all 200ms var(--ease-out);position:relative}
+.hist:hover{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.07)}
+.hist .thumb{width:176px;height:99px;border-radius:10px;flex:none;position:relative;overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08)}
+.hist .thumb .dur{position:absolute;right:6px;bottom:6px;padding:2px 7px;border-radius:6px;
+  background:rgba(0,0,0,0.65);font-size:10.5px;font-variant-numeric:tabular-nums}
+.hist .meta{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0}
+.hist .name{font-size:13.5px;font-weight:500;font-variant-numeric:tabular-nums}
+.hist .sub{font-size:11.5px;color:var(--text-3)}
+.hist .acts{margin-left:auto;display:flex;gap:8px;align-items:center;opacity:0;transition:opacity 180ms var(--ease-out)}
+.hist:hover .acts{opacity:1}
+.hact{padding:7px 14px;border-radius:9px;font-size:12px;color:var(--text-2);cursor:pointer;
+  background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);transition:all 180ms}
+.hact:hover{color:var(--text-1);background:rgba(255,255,255,0.11)}
+.hact.del:hover{color:#fff;background:rgba(255,69,58,0.75);border-color:transparent}
+</style>
+
+</main>
+
+<script>
+// ===== 屏幕切换 =====
+const navItems = document.querySelectorAll('.nav-item');
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+  navItems.forEach(n=>n.classList.toggle('active', n.dataset.screen===id));
+}
+navItems.forEach(n=>n.addEventListener('click',()=>{ location.hash=n.dataset.screen; }));
+function fromHash(){ const h=location.hash.slice(1); if(h && document.getElementById('s-'+h)) showScreen(h); }
+window.addEventListener('hashchange',fromHash); fromHash();
+
+// ===== 首页交互 =====
+const modeNames={fullscreen:'全屏',window:'窗口',region:'区域'};
+let pmode='fullscreen', prec=false;
+const pcards=document.querySelectorAll('.pcard');
+pcards.forEach(c=>{
+  c.addEventListener('click',()=>{
+    pcards.forEach(x=>x.classList.remove('selected'));
+    c.classList.add('selected'); pmode=c.dataset.m;
+    document.getElementById('proto-status').textContent=modeNames[pmode]+' · 1080P · 30 FPS · 系统声音 + 麦克风';
+  });
+});
+document.getElementById('proto-rec').addEventListener('click',function(){
+  prec=!prec;
+  this.classList.toggle('recording',prec);
+  document.getElementById('proto-rec-text').textContent=prec?'Stop':'Start Record';
+  document.getElementById('proto-status').textContent=prec
+    ?'00:00:00 · '+modeNames[pmode]+'录制中'
+    :'已保存到 视频/Inkframe · '+modeNames[pmode]+' · 1080P 30FPS';
+});
+
+// ===== 倒计时循环演示 =====
+let cdN=3;
+setInterval(()=>{
+  cdN=cdN<=1?3:cdN-1;
+  document.getElementById('cd-num').textContent=cdN;
+},1000);
+
+// ===== 悬浮条：音量柱律动 + 暂停/停止 =====
+const vuBars=document.querySelectorAll('#fb-vu i');
+setInterval(()=>{
+  vuBars.forEach(b=>{
+    b.style.height=(3+Math.random()*13).toFixed(0)+'px';
+    b.style.opacity=(0.5+Math.random()*0.5).toFixed(2);
+  });
+},160);
+let paused=false;
+document.getElementById('fb-pause').addEventListener('click',()=>{
+  paused=!paused;
+  document.getElementById('fb-pause-icon').innerHTML=paused
+    ?'<path d="M8 5v14l11-7z"/>'
+    :'<rect x="6" y="4" width="4" height="16" rx="1.2"/><rect x="14" y="4" width="4" height="16" rx="1.2"/>';
+  document.getElementById('fb-dot').style.animationPlayState=paused?'paused':'running';
+  document.getElementById('fb-dot').style.background=paused?'#FFB340':'var(--rec-red)';
+  document.getElementById('fb-dot').style.boxShadow=paused?'0 0 10px rgba(255,179,64,0.5)':'0 0 10px rgba(255,69,58,0.6)';
+});
+document.getElementById('fb-stop').addEventListener('click',()=>{
+  const bar=document.getElementById('floatbar');
+  bar.style.transition='all 300ms var(--ease-out)';
+  bar.style.opacity='0';bar.style.transform='translateX(-50%) translateY(10px)';
+  setTimeout(()=>{bar.style.opacity='1';bar.style.transform='translateX(-50%) translateY(0)';},900);
+});
+
+// ===== 历史列表数据 =====
+const thumbs=[
+  'linear-gradient(135deg,#2b3a55,#16202e)',
+  'linear-gradient(135deg,#3a2b45,#1e1626)',
+  'linear-gradient(135deg,#1e3a34,#101d1a)',
+  'linear-gradient(135deg,#3d3a2b,#201e14)'
+];
+const records=[
+  ['Inkframe_20260827_131542.mp4','今天 13:15 · 全屏 · 1080P 60FPS 超清','12:34','486 MB'],
+  ['Inkframe_20260827_095508.mp4','今天 09:55 · 窗口 · 代码编辑器 · 1080P 30FPS','45:07','1.8 GB'],
+  ['Inkframe_20260826_162244.mp4','昨天 16:22 · 区域 1280×720 · 标准画质','03:21','96 MB'],
+  ['Inkframe_20260825_204011.mp4','8月25日 · 全屏 · 系统声音 + 麦克风','28:52','1.1 GB']
+];
+const list=document.getElementById('hist-list');
+list.innerHTML=records.map((r,i)=>
+  '<div class="hist"><div class="thumb" style="background:'+thumbs[i]+'"><span class="dur">'+r[2]+'</span></div>'+
+  '<div class="meta"><div class="name">'+r[0]+'</div><div class="sub">'+r[1]+'</div><div class="sub">'+r[3]+'</div></div>'+
+  '<div class="acts"><div class="hact">播放</div><div class="hact">打开目录</div><div class="hact del">删除</div></div></div>'
+).join('');
+
+// ===== 设置 toggle 交互 =====
+document.querySelectorAll('.toggle').forEach(t=>t.addEventListener('click',()=>t.classList.toggle('on')));
+document.querySelectorAll('.set-nav').forEach(n=>n.addEventListener('click',()=>{
+  document.querySelectorAll('.set-nav').forEach(x=>x.classList.remove('on'));
+  n.classList.add('on');
+}));
+</script>
+
+</body>
+</html>
