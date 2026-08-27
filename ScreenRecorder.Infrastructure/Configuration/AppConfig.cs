@@ -13,6 +13,7 @@ public sealed class AppConfig
 
     public VideoConfig Video { get; set; } = new();
     public AudioConfig Audio { get; set; } = new();
+    public CursorConfig Cursor { get; set; } = new();
     public HotkeyConfig Hotkeys { get; set; } = new();
     public AdvancedConfig Advanced { get; set; } = new();
 }
@@ -30,6 +31,12 @@ public sealed class AudioConfig
     public bool Microphone { get; set; }                   // §17
     public double SystemVolume { get; set; } = 1.0;
     public double MicrophoneVolume { get; set; } = 1.0;
+}
+
+public sealed class CursorConfig                                  // §30
+{
+    public bool RecordCursor { get; set; } = true;
+    public bool HighlightCursor { get; set; }
 }
 
 public sealed class HotkeyConfig                                 // §29 默认值

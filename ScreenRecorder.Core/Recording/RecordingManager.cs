@@ -70,8 +70,15 @@ public sealed class RecordingManager : IRecordingManager
         TransitionTo(RecordingState.Countdown);
         await Task.Delay(TimeSpan.FromSeconds(CountdownSeconds), ct);   // §20 倒计时
 
+        // §30：光标选项从配置并入请求
+        var effectiveRequest = request with
+        {
+            RecordCursor = cfg.Cursor.RecordCursor,
+            HighlightCursor = cfg.Cursor.HighlightCursor
+        };
+
         // 采集先行：编码器初始化需要真实画面尺寸
-        await _capture.StartAsync(request, ct);
+        await _capture.StartAsync(effectiveRequest, ct);
         var (w, h) = _capture.CurrentSize;
 
         var audioEnabled = cfg.Audio.SystemAudio || cfg.Audio.Microphone;

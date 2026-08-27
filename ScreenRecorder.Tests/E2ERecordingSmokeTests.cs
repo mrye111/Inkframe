@@ -40,7 +40,21 @@ public sealed class E2ERecordingSmokeTests
         string? completed = null;
         manager.RecordingCompleted += (_, path) => completed = path;
 
-        await manager.StartAsync(new RecordingRequest { Mode = RecordingMode.FullScreen });
+        // #12 三模式：Region（默认，裁剪+DPI+光标）/ FullScreen / Window（首个可录制窗口）
+        var modeEnv = Environment.GetEnvironmentVariable("INKFRAME_E2E_MODE") ?? "Region";
+        RecordingRequest request = modeEnv switch
+        {
+            "FullScreen" => new RecordingRequest { Mode = RecordingMode.FullScreen },
+            "Window" => new RecordingRequest
+            {
+                Mode = RecordingMode.Window,
+                TargetWindowHandle = ScreenRecorder.Capture.Window.WindowEnumerator.GetRecordableWindows()
+                    .First().Hwnd.ToString("X")
+            },
+            _ => new RecordingRequest { Mode = RecordingMode.Region, Region = new ScreenRect(640, 440, 1280, 720) }
+        };
+        Console.WriteLine("E2E mode: " + request.Mode);
+        await manager.StartAsync(request);
         await Task.Delay(5000);        // 录 5 秒
         await manager.PauseAsync();    // 暂停 1 秒（验证 §22 时间轴剔除）
         await Task.Delay(1000);

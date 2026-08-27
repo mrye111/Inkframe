@@ -23,8 +23,11 @@ public interface IRecordingManager
 public sealed record RecordingRequest
 {
     public required RecordingMode Mode { get; init; }
-    public string? TargetWindowHandle { get; init; }   // 窗口模式
-    public ScreenRect? Region { get; init; }           // 区域模式（物理像素）
+    public string? TargetWindowHandle { get; init; }   // 窗口模式：HWND 十六进制字符串
+    public string? TargetMonitor { get; init; }        // 全屏模式：显示器设备名，null = 主显示器
+    public ScreenRect? Region { get; init; }           // 区域模式：虚拟坐标系矩形（§51）
+    public bool RecordCursor { get; init; } = true;    // §30
+    public bool HighlightCursor { get; init; }         // §30 鼠标高亮
 }
 
 public enum RecordingMode { FullScreen, Window, Region }

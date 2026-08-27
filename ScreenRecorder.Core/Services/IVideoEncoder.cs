@@ -38,4 +38,8 @@ public sealed class VideoFrame
 
     /// <summary>BGRA 打包像素（Width*4*Height 字节）。进程编码器直接写 stdin。</summary>
     public byte[]? PixelData { get; init; }
+
+    /// <summary>BGRA 像素原生指针 + 长度（采集层 DIB 位直供，零拷贝；二选一，优先于 PixelData）。</summary>
+    public IntPtr PixelPtr { get; init; }
+    public int PixelByteCount { get; init; }
 }

@@ -79,11 +79,22 @@ public sealed class FFmpegProcessEncoder : IVideoEncoder, IDisposable
     public Task EncodeFrameAsync(VideoFrame frame)
     {
         if (_ffmpeg is null || _options is null) throw new InvalidOperationException("未初始化");
-        if (frame.PixelData is null)
-            throw new ArgumentException("进程管线需要 CPU 像素（VideoFrame.PixelData）", nameof(frame));
 
         // 同步写：背压由管道天然提供；上层掉帧策略（§49）保证这里不长时间阻塞
-        _ffmpeg.StandardInput.BaseStream.Write(frame.PixelData, 0, frame.PixelData.Length);
+        var stream = _ffmpeg.StandardInput.BaseStream;
+        if (frame.PixelPtr != IntPtr.Zero && frame.PixelByteCount > 0)
+        {
+            // DIB 位直供：零拷贝路径
+            unsafe { stream.Write(new ReadOnlySpan<byte>((void*)frame.PixelPtr, frame.PixelByteCount)); }
+        }
+        else if (frame.PixelData is not null)
+        {
+            stream.Write(frame.PixelData, 0, frame.PixelData.Length);
+        }
+        else
+        {
+            throw new ArgumentException("进程管线需要 CPU 像素（PixelPtr 或 PixelData）", nameof(frame));
+        }
         return Task.CompletedTask;
     }
 
