@@ -10,6 +10,7 @@ public static class InfrastructureModule
     {
         services.AddSingleton(_ => Logging.LogBootstrap.CreateLogger());
         services.AddSingleton<ConfigService>();
+        services.AddSingleton<Diagnostics.SessionMarkerStore>();
         return services;
     }
 }

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -23,6 +23,9 @@
   <ItemGroup>
     <ProjectReference Include="..\ScreenRecorder.Core\ScreenRecorder.Core.csproj" />
     <ProjectReference Include="..\ScreenRecorder.Infrastructure\ScreenRecorder.Infrastructure.csproj" />
+    <ProjectReference Include="..\ScreenRecorder.Capture\ScreenRecorder.Capture.csproj" />
+    <ProjectReference Include="..\ScreenRecorder.Audio\ScreenRecorder.Audio.csproj" />
+    <ProjectReference Include="..\ScreenRecorder.Encoding\ScreenRecorder.Encoding.csproj" />
   </ItemGroup>
 
 </Project>

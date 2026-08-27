@@ -1,30 +1,109 @@
+using System.Diagnostics;
 using ScreenRecorder.Core.Services;
 
 namespace ScreenRecorder.Encoding.FFmpeg;
 
 /// <summary>
-/// ffmpeg.exe 进程管线编码器（§42 方案 A，V1 默认；最终定案见 issue #6）。
-/// 骨架阶段仅立形状，真实管线随 #3 Spike 结论与 #6 决策填充。
+/// ffmpeg.exe 进程管线编码器（#6 定案：V1 方案 A）。
+/// BGRA 帧 → stdin rawvideo → H.264 → MP4。编码器经 EncoderProber 运行时探测。
+/// 每实例对应一次录制会话，不作为单例复用。
 /// </summary>
-public sealed class FFmpegProcessEncoder : IVideoEncoder
+public sealed class FFmpegProcessEncoder : IVideoEncoder, IDisposable
 {
+    private readonly FfmpegLocator _locator;
+    private readonly EncoderProber _prober;
+
+    private Process? _ffmpeg;
     private VideoEncoderOptions? _options;
+    private string? _resolvedEncoder;
+
+    public FFmpegProcessEncoder() : this(new FfmpegLocator()) { }
+
+    public FFmpegProcessEncoder(FfmpegLocator locator, EncoderProber? prober = null)
+    {
+        _locator = locator;
+        _prober = prober ?? new EncoderProber(locator.ResolveForDevelopment());
+    }
+
+    /// <summary>实际使用的编码器（InitializeAsync 后可读，用于日志与 UI 提示）。</summary>
+    public string? ResolvedEncoder => _resolvedEncoder;
 
     public Task InitializeAsync(VideoEncoderOptions options)
     {
         _options = options;
-        // TODO(#6): 组装 ffmpeg 命令行（-f rawvideo / d3d11 帧喂入，-c:v h264_nvenc 等硬编映射）
+        _resolvedEncoder = options.Encoder == "auto" ? _prober.Probe() : options.Encoder;
+
+        var qualityArgs = QualityArgs(_resolvedEncoder, options.Quality);
+        var args = "-y -hide_banner -loglevel error"
+            + $" -f rawvideo -pix_fmt bgra -s {options.Width}x{options.Height} -r {options.Fps} -i -"
+            + $" -c:v {_resolvedEncoder} {qualityArgs}"
+            + " -pix_fmt yuv420p"
+            + " \"" + options.OutputFilePath + "\"";
+
+        Directory.CreateDirectory(Path.GetDirectoryName(options.OutputFilePath)!);
+        _ffmpeg = Process.Start(new ProcessStartInfo(_locator.ResolveForDevelopment(), args)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardInput = true,
+            RedirectStandardError = true   // 异步消费到日志文件
+        }) ?? throw new InvalidOperationException("ffmpeg 启动失败");
+
+        var logFile = options.OutputFilePath + ".ffmpeg.log";
+        _ = Task.Run(async () =>
+        {
+            var text = await _ffmpeg.StandardError.ReadToEndAsync();
+            await File.WriteAllTextAsync(logFile, text);
+        });
         return Task.CompletedTask;
     }
 
     public Task EncodeFrameAsync(VideoFrame frame)
     {
-        if (_options is null) throw new InvalidOperationException("未初始化");
-        // TODO(#3/#6): 帧写入进程 stdin 管道
+        if (_ffmpeg is null || _options is null) throw new InvalidOperationException("未初始化");
+        if (frame.PixelData is null)
+            throw new ArgumentException("进程管线需要 CPU 像素（VideoFrame.PixelData）", nameof(frame));
+
+        // 同步写：背压由管道天然提供；上层掉帧策略（§49）保证这里不长时间阻塞
+        _ffmpeg.StandardInput.BaseStream.Write(frame.PixelData, 0, frame.PixelData.Length);
         return Task.CompletedTask;
     }
 
-    public Task FlushAsync() => Task.CompletedTask;   // TODO: 关闭输入流等待进程排空
+    public async Task FlushAsync()
+    {
+        if (_ffmpeg is null) return;
+        _ffmpeg.StandardInput.Close();          // 关闭输入 → ffmpeg 排空并封装 moov
+        await _ffmpeg.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30));
+    }
 
-    public Task StopAsync() => Task.CompletedTask;    // TODO: 等待 ffmpeg 收尾封装 MP4
+    public async Task StopAsync()
+    {
+        await FlushAsync();
+        if (_ffmpeg is not null && _ffmpeg.ExitCode != 0)
+            throw new InvalidOperationException($"ffmpeg 异常退出（{_ffmpeg.ExitCode}），详见输出旁 .ffmpeg.log");
+    }
+
+    /// <summary>画质档位 → 编码参数（§14：低/标准/高清/超清）。硬编用 -b:v，openh264 用 -b:v。</summary>
+    private static string QualityArgs(string encoder, string quality) => quality switch
+    {
+        "低" => "-b:v 2M",
+        "标准" => "-b:v 5M",
+        "高清" => "-b:v 10M",
+        "超清" => "-b:v 20M",
+        _ => "-b:v 5M"
+    } + (encoder == "h264_nvenc" ? " -preset p4" : "");
+
+    public void Dispose()
+    {
+        try
+        {
+            if (_ffmpeg is { HasExited: false })
+            {
+                _ffmpeg.StandardInput.Close();
+                _ffmpeg.Kill();
+            }
+        }
+        catch { /* 析构路径不抛 */ }
+        _ffmpeg?.Dispose();
+    }
 }

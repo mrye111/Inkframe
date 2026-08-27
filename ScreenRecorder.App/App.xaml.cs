@@ -34,10 +34,12 @@ public partial class App : System.Windows.Application
 
         var builder = Host.CreateApplicationBuilder();
         builder.Services.AddInfrastructure();
-        builder.Services.AddSingleton<IRecordingManager, RecordingManager>();
         builder.Services.AddSingleton<IScreenCaptureService, Capture.Screen.WgcScreenCaptureService>();
         builder.Services.AddSingleton<IAudioCaptureService, Audio.SystemAudio.WasapiAudioCaptureService>();
-        builder.Services.AddSingleton<IVideoEncoder, Encoding.FFmpeg.FFmpegProcessEncoder>();
+        builder.Services.AddTransient<Encoding.FFmpeg.FFmpegProcessEncoder>();
+        builder.Services.AddSingleton<Func<IVideoEncoder>>(sp =>
+            () => sp.GetRequiredService<Encoding.FFmpeg.FFmpegProcessEncoder>());
+        builder.Services.AddSingleton<IRecordingManager, RecordingManager>();
         builder.Services.AddSingleton<MainWindowViewModel>();
         builder.Services.AddSingleton<MainWindow>();
         _host = builder.Build();

@@ -19,11 +19,16 @@ public sealed record VideoEncoderOptions
     public required string OutputFilePath { get; init; }
 }
 
-/// <summary>一帧画面（D3D11 纹理句柄或 CPU 位图，随 #12 定稿）。</summary>
+/// <summary>
+/// 一帧画面。进程管线（V1）走 PixelData（BGRA 打包字节）；TextureHandle 预留给 DLL 路线（#14 预研）。
+/// </summary>
 public sealed class VideoFrame
 {
     public long TimestampTicks { get; init; }
     public IntPtr TextureHandle { get; init; }
     public int Width { get; init; }
     public int Height { get; init; }
+
+    /// <summary>BGRA 打包像素（Width*4*Height 字节）。进程编码器直接写 stdin。</summary>
+    public byte[]? PixelData { get; init; }
 }

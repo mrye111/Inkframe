@@ -10,6 +10,9 @@ public interface IRecordingManager
 
     event EventHandler<RecordingStateChangedEventArgs>? StateChanged;
 
+    /// <summary>录制完成事件：参数为输出文件完整路径。</summary>
+    event EventHandler<string>? RecordingCompleted;
+
     Task StartAsync(RecordingRequest request, CancellationToken ct = default);
     Task PauseAsync(CancellationToken ct = default);
     Task ResumeAsync(CancellationToken ct = default);
