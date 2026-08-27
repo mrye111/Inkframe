@@ -26,6 +26,7 @@
     <ProjectReference Include="..\ScreenRecorder.Capture\ScreenRecorder.Capture.csproj" />
     <ProjectReference Include="..\ScreenRecorder.Audio\ScreenRecorder.Audio.csproj" />
     <ProjectReference Include="..\ScreenRecorder.Encoding\ScreenRecorder.Encoding.csproj" />
+    <ProjectReference Include="..\ScreenRecorder.UI\ScreenRecorder.UI.csproj" />
   </ItemGroup>
 
 </Project>
