@@ -26,8 +26,14 @@ public sealed class AudioMixer : IDisposable
     public float SystemVolume { get; set; } = 1.0f;
     public float MicVolume { get; set; } = 1.0f;
 
+    /// <summary>当前输出电平 0..1（RMS，20ms 粒度平滑，§35 实时音量反馈用）。</summary>
+    public float CurrentLevel { get; private set; }
+
     /// <summary>每 20ms 产出一块混合 PCM（s16le 48k stereo，3840B）。</summary>
     public event EventHandler<byte[]>? ChunkMixed;
+
+    /// <summary>每拍电平通知（0..1 RMS）。</summary>
+    public event EventHandler<float>? LevelChanged;
 
     public AudioMixer()
     {
@@ -71,6 +77,8 @@ public sealed class AudioMixer : IDisposable
         var mixed = new byte[ChunkBytes];
         MixInto(mixed, sys, SystemVolume);
         MixInto(mixed, mic, MicVolume);
+        CurrentLevel = ComputeRms(mixed);
+        LevelChanged?.Invoke(this, CurrentLevel);
         ChunkMixed?.Invoke(this, mixed);
     }
 
@@ -109,6 +117,19 @@ public sealed class AudioMixer : IDisposable
             target[i] = (byte)(clamped & 0xFF);
             target[i + 1] = (byte)(clamped >> 8);
         }
+    }
+
+    private static float ComputeRms(byte[] s16)
+    {
+        double sum = 0;
+        for (var i = 0; i < s16.Length; i += 2)
+        {
+            var s = (short)(s16[i] | s16[i + 1] << 8) / 32768.0;
+            sum += s * s;
+        }
+        var rms = Math.Sqrt(sum / (s16.Length / 2));
+        // 感知映射：RMS 偏小，开方提升低电平可见度
+        return (float)Math.Min(1.0, Math.Sqrt(rms) * 1.6);
     }
 
     public void Dispose() => _timer.Dispose();

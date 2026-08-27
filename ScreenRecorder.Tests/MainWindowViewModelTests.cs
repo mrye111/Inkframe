@@ -10,6 +10,7 @@ public sealed class MainWindowViewModelTests
     {
         public RecordingState State { get; private set; } = RecordingState.Idle;
         public RecordingSession? CurrentSession => null;
+        public TimeSpan Elapsed => TimeSpan.FromSeconds(42);
         public event EventHandler<RecordingStateChangedEventArgs>? StateChanged;
         public event EventHandler<string>? RecordingCompleted;
 

@@ -21,6 +21,10 @@ public sealed class RecordingSession : IDisposable
 
     public void MarkPaused() => _pauseStartedAt ??= DateTimeOffset.Now;
 
+    /// <summary>给定墙钟时长，扣除暂停（含进行中的暂停段）。</summary>
+    public TimeSpan EffectiveElapsed(TimeSpan wallClock) =>
+        wallClock - AccumulatedPause - (_pauseStartedAt is { } s ? DateTimeOffset.Now - s : TimeSpan.Zero);
+
     public void MarkResumed()
     {
         if (_pauseStartedAt is { } start)

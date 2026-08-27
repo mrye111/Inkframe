@@ -31,6 +31,9 @@ public sealed class RecordingManager : IRecordingManager
     public RecordingState State { get; private set; } = RecordingState.Idle;
     public RecordingSession? CurrentSession { get; private set; }
 
+    public TimeSpan Elapsed =>
+        _clock is null ? TimeSpan.Zero : (CurrentSession?.EffectiveElapsed(_clock.Elapsed) ?? _clock.Elapsed);
+
     public event EventHandler<RecordingStateChangedEventArgs>? StateChanged;
 
     /// <summary>录制完成事件：参数为输出文件完整路径。</summary>

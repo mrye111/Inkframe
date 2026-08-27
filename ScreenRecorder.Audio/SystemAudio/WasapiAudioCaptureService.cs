@@ -26,6 +26,7 @@ public sealed class WasapiAudioCaptureService : IAudioCaptureService, IDisposabl
 
     public event EventHandler<AudioBuffer>? BufferReady;
     public event EventHandler<string>? DeviceDisconnected;
+    public event EventHandler<float>? LevelChanged;
 
     /// <summary>当前激活的混音器（设置页实时音量用，§34/§35）。</summary>
     public AudioMixer? Mixer => _mixer;
@@ -33,6 +34,7 @@ public sealed class WasapiAudioCaptureService : IAudioCaptureService, IDisposabl
     public Task StartAsync(bool captureSystemAudio, bool captureMicrophone, CancellationToken ct = default)
     {
         _mixer = new AudioMixer();
+        _mixer.LevelChanged += (_, v) => LevelChanged?.Invoke(this, v);
         _mixer.ChunkMixed += (_, chunk) => BufferReady?.Invoke(this, new AudioBuffer
         {
             TimestampTicks = System.Diagnostics.Stopwatch.GetTimestamp(),

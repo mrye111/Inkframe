@@ -10,6 +10,9 @@ public interface IAudioCaptureService
 
     /// <summary>音频设备断开通知（§54）：不中断录制，由上层提示。</summary>
     event EventHandler<string>? DeviceDisconnected;
+
+    /// <summary>输出电平通知（§35）：0..1 RMS，UI 音量条用。</summary>
+    event EventHandler<float>? LevelChanged;
 }
 
 public sealed class AudioBuffer

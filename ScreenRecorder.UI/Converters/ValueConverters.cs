@@ -18,8 +18,12 @@ public sealed class ModeToBoolConverter : IValueConverter
 
 public sealed class BoolToVisibilityConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
-        value is true ? Visibility.Visible : Visibility.Collapsed;
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        var visible = value is true;
+        if (parameter as string == "invert") visible = !visible;
+        return visible ? Visibility.Visible : Visibility.Collapsed;
+    }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
         value is Visibility.Visible;

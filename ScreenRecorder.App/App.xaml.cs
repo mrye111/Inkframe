@@ -20,6 +20,15 @@ public partial class App : System.Windows.Application
 
     protected override void OnStartup(System.Windows.StartupEventArgs e)
     {
+        // §53 全局异常兜底：先落盘再死（WinExe 无控制台，静默崩溃无法排障）
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            TryLogFatal("AppDomain", args.ExceptionObject as Exception);
+        DispatcherUnhandledException += (_, args) =>
+        {
+            TryLogFatal("Dispatcher", args.Exception);
+            args.Handled = true;
+            Shutdown(1);
+        };
         // 单实例（托盘场景下尤为重要，§41）
         _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out var createdNew);
         if (!createdNew)
@@ -43,6 +52,8 @@ public partial class App : System.Windows.Application
         builder.Services.AddSingleton<IRecordingManager, RecordingManager>();
         builder.Services.AddSingleton<MainWindowViewModel>();
         builder.Services.AddSingleton<MainWindow>();
+        builder.Services.AddSingleton<FloatingBarViewModel>();
+        builder.Services.AddSingleton<FloatingBarWindow>();
         _host = builder.Build();
 
         var logger = _host.Services.GetRequiredService<Serilog.Core.Logger>();
@@ -53,6 +64,43 @@ public partial class App : System.Windows.Application
 
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
         mainWindow.Show();
+
+        // §21：录制开始 → 主窗最小化 + 悬浮条接管；结束 → 恢复
+        var recordingManager = _host.Services.GetRequiredService<IRecordingManager>();
+        var floatingBar = _host.Services.GetRequiredService<FloatingBarWindow>();
+
+        // 开发验证开关：直接展示悬浮条（#16 截图验证用，发布版无害）
+        if (Environment.GetEnvironmentVariable("INKFRAME_SHOW_FLOATBAR") == "1")
+            floatingBar.ShowAndRun();
+        recordingManager.StateChanged += (_, e2) => Dispatcher.Invoke(() =>
+        {
+            switch (e2.NewState)
+            {
+                case RecordingState.Recording:
+                    if (e2.OldState == RecordingState.Countdown)
+                    {
+                        mainWindow.WindowState = System.Windows.WindowState.Minimized;
+                        floatingBar.ShowAndRun();
+                    }
+                    break;
+                case RecordingState.Idle:
+                    floatingBar.HideAndStop();
+                    ShowMainWindow();
+                    break;
+            }
+        });
+    }
+
+    private static void TryLogFatal(string source, Exception? ex)
+    {
+        try
+        {
+            if (ex is not null)
+                System.IO.File.AppendAllText(
+                    System.IO.Path.Combine(Infrastructure.Logging.LogBootstrap.LogDirectory, "fatal.log"),
+                    $"[{DateTime.Now:HH:mm:ss}] {source}: {ex}\n\n");
+        }
+        catch { /* 兜底路径不抛 */ }
     }
 
     private void ShowMainWindow()

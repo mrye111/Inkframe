@@ -8,6 +8,9 @@ public interface IRecordingManager
     RecordingState State { get; }
     RecordingSession? CurrentSession { get; }
 
+    /// <summary>有效录制时长（墙钟 - 暂停累计，§22；悬浮条计时显示用）。</summary>
+    TimeSpan Elapsed { get; }
+
     event EventHandler<RecordingStateChangedEventArgs>? StateChanged;
 
     /// <summary>录制完成事件：参数为输出文件完整路径。</summary>

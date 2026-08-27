@@ -38,6 +38,7 @@ public sealed class RecordingManagerTests
     {
         public event EventHandler<AudioBuffer>? BufferReady { add { } remove { } }
         public event EventHandler<string>? DeviceDisconnected { add { } remove { } }
+        public event EventHandler<float>? LevelChanged { add { } remove { } }
         public Task StartAsync(bool s, bool m, CancellationToken ct = default) => Task.CompletedTask;
         public Task StopAsync(CancellationToken ct = default) => Task.CompletedTask;
     }
