@@ -47,6 +47,9 @@ Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
+# Spike 运行产物
+spikes/output/
+
 # 本地录制产物（测试输出）
 recordings/
 *.mp4
