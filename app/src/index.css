@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* ===== Inkframe 设计 Token（内部规范；Tailwind v4 theme） ===== */
+@theme {
+  --color-ink-bg0: #090A0D;
+  --color-ink-bg1: #101218;
+  --color-ink-bg2: #151821;
+  --color-ink-text1: #F2F2F5;
+  --color-ink-text2: #9A9AA5;
+  --color-ink-text3: #62626C;
+  --color-ink-red: #FF453A;
+  --color-ink-blue: #5E8CE6;
+  --color-ink-green: #63C28C;
+  --color-ink-amber: #FFB340;
+  --font-ink: "Segoe UI Variable", "Microsoft YaHei UI", system-ui, sans-serif;
+}
+
+:root { color-scheme: dark; }
+
+html, body, #root {
+  height: 100%;
+  background: transparent;   /* Mica/Acrylic 透出 */
+  font-family: var(--font-ink);
+  color: var(--color-ink-text1);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  overflow: hidden;
+}

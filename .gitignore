@@ -49,6 +49,12 @@ $RECYCLE.BIN/
 
 # Spike 运行产物
 spikes/output/
+**/target/
+
+# Node / Tauri 前端
+node_modules/
+app/dist/
+app/src-tauri/gen/
 
 # 本地录制产物（测试输出）
 recordings/
